@@ -1,6 +1,8 @@
 package complexity
 
 import (
+	"flag"
+	"fmt"
 	"go/ast"
 	"go/token"
 
@@ -21,6 +23,14 @@ var Analyzer = &analysis.Analyzer{
 	},
 }
 
+var (
+	over int
+)
+
+func init() {
+	flag.IntVar(&over, "over", 10, "show functions with Cyclomatic complexity > k")
+}
+
 func run(pass *analysis.Pass) (interface{}, error) {
 	inspect := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
 
@@ -31,7 +41,11 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	inspect.Preorder(nodeFilter, func(n ast.Node) {
 		switch n := n.(type) {
 		case *ast.FuncDecl:
-			pass.Reportf(n.Pos(), "Cyclomatic complexity: %d", walkFuncDecl(n))
+			comp := walkFuncDecl(n)
+			if comp > over {
+				fmt.Println(comp, pass.Pkg.Name(), n.Name)
+			}
+			pass.Reportf(n.Pos(), "Cyclomatic complexity: %d", comp)
 		}
 	})
 

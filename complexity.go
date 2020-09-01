@@ -2,6 +2,7 @@ package complexity
 
 import (
 	"go/ast"
+	"go/token"
 
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
@@ -30,49 +31,38 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	inspect.Preorder(nodeFilter, func(n ast.Node) {
 		switch n := n.(type) {
 		case *ast.FuncDecl:
-			cnt := cntFuncBranch(n)
-			pass.Reportf(n.Pos(), "branch cnt: %d", cnt)
+			pass.Reportf(n.Pos(), "Cyclomatic complexity: %d", walkFuncDecl(n))
 		}
 	})
 
 	return nil, nil
 }
 
-func cntFuncBranch(decl *ast.FuncDecl) int {
-	ast.Print(nil, decl)
-	return cntBranch(decl.Body)
+type branchVisitor func(n ast.Node) (w ast.Visitor)
+
+// Visit is ...
+func (v branchVisitor) Visit(n ast.Node) (w ast.Visitor) {
+	return v(n)
 }
 
-func cntBranch(stmt *ast.BlockStmt) int {
-	if stmt == nil {
-		return 0
-	}
+// walkFuncDecl counts Cyclomatic complexity
+func walkFuncDecl(fd *ast.FuncDecl) int {
+	// ast.Print(nil, fd)
 
-	cnt := 0
-	for _, s := range stmt.List {
-		switch s := s.(type) {
-		case *ast.BlockStmt:
-			cnt += cntBranch(s)
-		case *ast.IfStmt:
-			cnt += cntIfBranch(s)
-		case *ast.ForStmt:
-			cnt += cntForBranch(s)
+	comp := 1
+	var v ast.Visitor
+	v = branchVisitor(func(n ast.Node) (w ast.Visitor) {
+		switch n := n.(type) {
+		case *ast.IfStmt, *ast.ForStmt, *ast.RangeStmt, *ast.CaseClause, *ast.CommClause:
+			comp++
+		case *ast.BinaryExpr:
+			if n.Op == token.LAND || n.Op == token.LOR {
+				comp++
+			}
 		}
-	}
-	return cnt
-}
+		return v
+	})
+	ast.Walk(v, fd)
 
-func cntIfBranch(stmt *ast.IfStmt) int {
-	cnt := 1
-	switch s := stmt.Else.(type) {
-	case *ast.IfStmt: // else if
-		cnt += cntIfBranch(s)
-	case *ast.BlockStmt: // only else
-		cnt += 1 + cntBranch(s)
-	}
-	return cnt
-}
-
-func cntForBranch(stmt *ast.ForStmt) int {
-	return 1 + cntBranch(stmt.Body)
+	return comp
 }

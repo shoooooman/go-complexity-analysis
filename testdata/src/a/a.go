@@ -1,8 +1,21 @@
 package a
 
-func f() {
-	// The pattern can be written in regular expression.
-	var gopher int // want "pattern"
-	print(gopher)  // want "identifier is gopher"
-}
+func f() { // want "branch cnt: 8"
+	for true {
+		if false {
 
+		} else if false {
+
+		} else if false {
+
+		} else if false {
+
+		} else if false {
+
+		} else if false {
+
+		} else {
+
+		}
+	}
+}

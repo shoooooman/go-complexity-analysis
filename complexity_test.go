@@ -3,7 +3,7 @@ package complexity_test
 import (
 	"testing"
 
-	"github.com/shoooooman/complexity"
+	"github.com/shoooooman/go-complexity-analysis"
 	"golang.org/x/tools/go/analysis/analysistest"
 )
 
@@ -12,4 +12,3 @@ func TestAnalyzer(t *testing.T) {
 	testdata := analysistest.TestData()
 	analysistest.Run(t, testdata, complexity.Analyzer, "a")
 }
-

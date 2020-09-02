@@ -2,8 +2,8 @@ name: golang_test
 on: [push]
 
 jobs:
-  build:
-    name: test
+  golangci:
+    name: lint
     runs-on: ubuntu-latest
     steps:
       - name: set up
@@ -18,5 +18,9 @@ jobs:
         with:
           version: v1.29
           args: --skip-dirs=plugin
+  build:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
       - name: test
         run: go test -v ./...

@@ -6,11 +6,10 @@ jobs:
     name: lint
     runs-on: ubuntu-latest
     steps:
-      - name: set up
-        uses: actions/setup-go@v1
+      - name: golang set up
+        uses: actions/setup-go@v2
         with:
           go-version: 1.15
-        id: go
       - name: checkout
         uses: actions/checkout@v2
       - name: golangci-lint
@@ -22,11 +21,10 @@ jobs:
     name: test
     runs-on: ubuntu-latest
     steps:
-      - name: set up
-        uses: actions/setup-go@v1
+      - name: golang set up
+        uses: actions/setup-go@v2
         with:
           go-version: 1.15
-        id: go
       - name: checkout
         uses: actions/checkout@v2
       - name: test

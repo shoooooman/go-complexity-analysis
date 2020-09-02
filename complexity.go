@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"math"
 
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
@@ -24,11 +25,13 @@ var Analyzer = &analysis.Analyzer{
 }
 
 var (
-	over int
+	cycloover  int
+	maintunder int
 )
 
 func init() {
-	flag.IntVar(&over, "over", 10, "show functions with Cyclomatic complexity > k")
+	flag.IntVar(&cycloover, "cycloover", 10, "show functions with the Cyclomatic complexity > N")
+	flag.IntVar(&maintunder, "maintunder", 20, "show functions with the Maintainability index < N")
 }
 
 func run(pass *analysis.Pass) (interface{}, error) {
@@ -41,11 +44,21 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	inspect.Preorder(nodeFilter, func(n ast.Node) {
 		switch n := n.(type) {
 		case *ast.FuncDecl:
-			comp := walkFuncDecl(n)
-			if comp > over {
-				fmt.Println(comp, pass.Pkg.Name(), n.Name)
+			cycloComp := calcCycloComp(n)
+			if cycloComp > cycloover {
+				fmt.Println("cyclo", cycloComp, pass.Pkg.Name(), n.Name)
 			}
-			pass.Reportf(n.Pos(), "Cyclomatic complexity: %d", comp)
+
+			// FIXME: mock
+			halstComp := calcHalstComp()
+
+			loc := countLOC(pass.Fset, n)
+			maintIdx := calcMaintIndex(halstComp, cycloComp, loc)
+			if maintIdx < maintunder {
+				fmt.Println("maint", maintIdx, pass.Pkg.Name(), n.Name)
+			}
+
+			pass.Reportf(n.Pos(), "Cyclomatic complexity: %d", cycloComp)
 		}
 	})
 
@@ -59,8 +72,8 @@ func (v branchVisitor) Visit(n ast.Node) (w ast.Visitor) {
 	return v(n)
 }
 
-// walkFuncDecl counts Cyclomatic complexity
-func walkFuncDecl(fd *ast.FuncDecl) int {
+// calcCycloComp calculates the Cyclomatic complexity
+func calcCycloComp(fd *ast.FuncDecl) int {
 	// ast.Print(nil, fd)
 
 	comp := 1
@@ -79,4 +92,25 @@ func walkFuncDecl(fd *ast.FuncDecl) int {
 	ast.Walk(v, fd)
 
 	return comp
+}
+
+// FIXME: mock
+func calcHalstComp() int {
+	return 1
+}
+
+// counts lines of a function
+func countLOC(fs *token.FileSet, n *ast.FuncDecl) int {
+	f := fs.File(n.Pos())
+	startLine := f.Line(n.Pos())
+	endLine := f.Line(n.End())
+	return endLine - startLine + 1
+}
+
+// calcMaintComp calculates the maintainability index
+// source: https://docs.microsoft.com/en-us/archive/blogs/codeanalysis/maintainability-index-range-and-meaning
+func calcMaintIndex(halstComp, cycloComp, loc int) int {
+	origVal := 171.0 - 5.2*math.Log(float64(halstComp)) - 0.23*float64(cycloComp) - 16.2*math.Log(float64(loc))
+	normVal := int(math.Max(0.0, origVal*100.0/171.0))
+	return normVal
 }

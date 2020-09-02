@@ -7,7 +7,7 @@ package main
 import (
 	"strings"
 
-	"github.com/shoooooman/complexity"
+	"github.com/shoooooman/go-complexity-analysis"
 	"golang.org/x/tools/go/analysis"
 )
 
@@ -33,4 +33,3 @@ func (analyzerPlugin) GetAnalyzers() []*analysis.Analyzer {
 		complexity.Analyzer,
 	}
 }
-

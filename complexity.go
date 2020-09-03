@@ -47,7 +47,10 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		case *ast.FuncDecl:
 			cycloComp := calcCycloComp(n)
 			if cycloComp > cycloover {
-				fmt.Println("cyclo", cycloComp, pass.Pkg.Name(), n.Name)
+				// fmt.Println("cyclo", cycloComp, pass.Pkg.Name(), n.Name)
+				f := pass.Fset.File(n.Pos())
+				msg := fmt.Sprintf("Cyclomatic complexity %d\n", cycloComp)
+				fmt.Printf("%s:%d:%d:%s", f.Name(), f.Line(n.Pos()), 1, msg)
 			}
 
 			volume := calcHalstComp(n)

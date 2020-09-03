@@ -97,12 +97,8 @@ func calcCycloComp(fd *ast.FuncDecl) int {
 func calcHalstComp(fd *ast.FuncDecl) float64 {
 	operators, operands := map[string]int{}, map[string]int{}
 
-	var v ast.Visitor
-	v = branchVisitor(func(n ast.Node) (w ast.Visitor) {
-		walkStmt(n, operators, operands)
-		return v
-	})
-	ast.Walk(v, fd)
+	walkDecl(fd, operators, operands)
+	fmt.Println(operators, operands)
 
 	distOpt := len(operators) // distinct operators
 	distOpd := len(operands)  // distrinct operands
@@ -140,14 +136,45 @@ func calcMaintIndex(halstComp float64, cycloComp, loc int) int {
 	return normVal
 }
 
-func walkStmt(n ast.Node, opt map[string]int, opd map[string]int) {
+func walkDecl(n ast.Node, opt map[string]int, opd map[string]int) {
 	switch n := n.(type) {
+	case *ast.GenDecl:
+		appendValidParen(n.Lparen.IsValid(), n.Rparen.IsValid(), opt)
+
+		if n.Tok.IsOperator() {
+			opt[n.Tok.String()]++
+		} else {
+			opd[n.Tok.String()]++
+		}
+		for _, s := range n.Specs {
+			walkSpec(s, opt, opd)
+		}
 	case *ast.FuncDecl:
 		if n.Recv == nil {
 			opt["func"]++
 			opt[n.Name.Name]++
 			opt["()"]++
-			opt["{}"]++
+		}
+		walkStmt(n.Body, opt, opd)
+	}
+}
+
+func walkStmt(n ast.Node, opt map[string]int, opd map[string]int) {
+	// if n != nil {
+	// 	fmt.Println(reflect.ValueOf(n).Elem(), reflect.ValueOf(n).Elem().Type())
+	// }
+	switch n := n.(type) {
+	case *ast.DeclStmt:
+		walkDecl(n.Decl, opt, opd)
+	// TODO(sff1019): Add EmptyStmt
+	// TODO(sff1019): Add LabeledStmt
+	case *ast.ExprStmt:
+		walkExpr(n.X, opt, opd)
+	// TODO(sff1019): Add SendStmt
+	case *ast.IncDecStmt:
+		walkExpr(n.X, opt, opd)
+		if n.Tok.IsOperator() {
+			opt[n.Tok.String()]++
 		}
 	case *ast.AssignStmt:
 		if n.Tok.IsOperator() {
@@ -159,8 +186,21 @@ func walkStmt(n ast.Node, opt map[string]int, opd map[string]int) {
 		for _, exp := range n.Rhs {
 			walkExpr(exp, opt, opd)
 		}
-	case *ast.ExprStmt:
-		walkExpr(n.X, opt, opd)
+	case *ast.DeferStmt:
+		if n.Defer.IsValid() {
+			opt["defer"]++
+		}
+		walkExpr(n.Call, opt, opd)
+	// TODO(sff1019): Add ReturnStmt
+	// TODO(sff1019): Add BranchStmt
+	// TODO(sff1019): Add BlockStmt
+	case *ast.BlockStmt:
+		if n.Lbrace.IsValid() && n.Rbrace.IsValid() {
+			opt["{}"]++
+		}
+		for _, s := range n.List {
+			walkStmt(s, opt, opd)
+		}
 	case *ast.IfStmt:
 		if n.If.IsValid() {
 			opt["if"]++
@@ -176,6 +216,19 @@ func walkStmt(n ast.Node, opt map[string]int, opd map[string]int) {
 			opt["{}"]++
 			walkStmt(n.Else, opt, opd)
 		}
+	case *ast.SwitchStmt:
+		if n.Switch.IsValid() {
+			opt["switch"]++
+		}
+		if n.Init != nil {
+			walkStmt(n.Init, opt, opd)
+		}
+		if n.Tag != nil {
+			walkExpr(n.Tag, opt, opd)
+		}
+		walkStmt(n.Body, opt, opd)
+	// TODO(sff1019): Add TypeSwitchStmt
+	// TODO(sff1019): Add SelectStmt
 	case *ast.ForStmt:
 		if n.For.IsValid() {
 			opt["for"]++
@@ -191,17 +244,7 @@ func walkStmt(n ast.Node, opt map[string]int, opd map[string]int) {
 			walkStmt(n.Post, opt, opd)
 		}
 		walkStmt(n.Body, opt, opd)
-	case *ast.SwitchStmt:
-		if n.Switch.IsValid() {
-			opt["switch"]++
-		}
-		if n.Init != nil {
-			walkStmt(n.Init, opt, opd)
-		}
-		if n.Tag != nil {
-			walkExpr(n.Tag, opt, opd)
-		}
-		walkStmt(n.Body, opt, opd)
+	// TODO(sff1019): Add RangeStmt
 	case *ast.CaseClause:
 		if n.List == nil {
 			opt["default"]++
@@ -217,38 +260,67 @@ func walkStmt(n ast.Node, opt map[string]int, opd map[string]int) {
 			for _, b := range n.Body {
 				walkStmt(b, opt, opd)
 			}
+		}
+	}
+}
 
+func walkSpec(spec ast.Spec, opt map[string]int, opd map[string]int) {
+	switch spec := spec.(type) {
+	case *ast.ValueSpec:
+		for _, n := range spec.Names {
+			walkExpr(n, opt, opd)
+			if spec.Type != nil {
+				walkExpr(spec.Type, opt, opd)
+			}
+			if spec.Values != nil {
+				for _, v := range spec.Values {
+					walkExpr(v, opt, opd)
+				}
+			}
 		}
 	}
 }
 
 func walkExpr(exp ast.Expr, opt map[string]int, opd map[string]int) {
 	switch exp := exp.(type) {
-	case *ast.Ident:
-		if exp.Obj == nil {
-			opt[exp.Name]++
-		} else {
-			opd[exp.Name]++
+	case *ast.ParenExpr:
+		appendValidParen(exp.Lparen.IsValid(), exp.Rparen.IsValid(), opt)
+		walkExpr(exp.X, opt, opd)
+	case *ast.SelectorExpr:
+		walkExpr(exp.X, opt, opd)
+		walkExpr(exp.Sel, opt, opd)
+	// TODO(sff1019): Add IndexExpr
+	// TODO(sff1019): Add SliceExpr
+	// TODO(sff1019): Add TypeSAssertExpr
+	case *ast.CallExpr:
+		walkExpr(exp.Fun, opt, opd)
+		appendValidParen(exp.Lparen.IsValid(), exp.Rparen.IsValid(), opt)
+		if exp.Ellipsis != 0 {
+			opt["..."]++
 		}
+		for _, a := range exp.Args {
+			walkExpr(a, opt, opd)
+		}
+	// TODO(sff1019): Add StarExpr
+	// TODO(sff1019): Add UnaryExpr
+	case *ast.BinaryExpr:
+		walkExpr(exp.X, opt, opd)
+		opt[exp.Op.String()]++
+		walkExpr(exp.Y, opt, opd)
+	// TODO(sff1019): Add KeyValueExpr
 	case *ast.BasicLit:
 		if exp.Kind.IsLiteral() {
 			opd[exp.Value]++
 		} else {
 			opt[exp.Value]++
 		}
-	case *ast.BinaryExpr:
-		walkExpr(exp.X, opt, opd)
-		opt[exp.Op.String()]++
-		walkExpr(exp.Y, opt, opd)
-	case *ast.ParenExpr:
-		appendValidParen(exp.Lparen.IsValid(), exp.Rparen.IsValid(), opt)
-		walkExpr(exp.X, opt, opd)
-	case *ast.CallExpr:
-		walkExpr(exp.Fun, opt, opd)
-		appendValidParen(exp.Lparen.IsValid(), exp.Rparen.IsValid(), opt)
-		for _, ea := range exp.Args {
-			walkExpr(ea, opt, opd)
+	case *ast.Ident:
+		if exp.Obj == nil {
+			opt[exp.Name]++
+		} else {
+			opd[exp.Name]++
 		}
+		// TODO(sff1019): Add Ellipsis
 	}
 }
 

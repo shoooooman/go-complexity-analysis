@@ -11,9 +11,11 @@ func f1() { // want "Cyclomatic complexity: 2"
 	}
 }
 
-func f2() { // want "Cyclomatic complexity: 9"
+func f2() { // want "Cyclomatic complexity: 11"
 	for true {
 		if false {
+
+		} else if false {
 
 		} else if false {
 
@@ -24,6 +26,7 @@ func f2() { // want "Cyclomatic complexity: 9"
 			switch n {
 			case 0:
 			case 1:
+			case 2:
 			default:
 			}
 		} else {

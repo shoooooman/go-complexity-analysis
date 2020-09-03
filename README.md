@@ -27,6 +27,18 @@ $ go vet -vettool=$(which complexity) --cycloover 10 .
 $ go vet -vettool=$(which complexity) --maintunder 20 main.go
 $ go vet -vettool=$(which complexity) --cycloover 5 --maintunder 30 ./src
 ```
+# Metrics
+## Halstead Metrics
+
+### Operands
+- Identifiers
+- Constant
+- Typename
+
+### Operators
+- Operators
+- Keywords
+
 
 # WIP
 - [ ] Implement the Halstead complexities

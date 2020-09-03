@@ -117,9 +117,9 @@ func calcHalstComp(fd *ast.FuncDecl) float64 {
 	}
 
 	nVocab := distOpt + distOpd
-	length := sum_opt + sum_opd
-	volume := float64(length) * math.Log2(float64(n_vocab))
-	difficulty := float64(distOpt*sum_opd) / float64(2*distOpd)
+	length := sumOpt + sumOpd
+	volume := float64(length) * math.Log2(float64(nVocab))
+	difficulty := float64(distOpt*sumOpd) / float64(2*distOpd)
 	fmt.Println("difficulty", difficulty)
 
 	return volume
@@ -136,7 +136,7 @@ func countLOC(fs *token.FileSet, n *ast.FuncDecl) int {
 // calcMaintComp calculates the maintainability index
 // source: https://docs.microsoft.com/en-us/archive/blogs/codeanalysis/maintainability-index-range-and-meaning
 func calcMaintIndex(halstComp float64, cycloComp, loc int) int {
-	origVal := 171.0 - 5.2*math.Log(float64(halstComp)) - 0.23*float64(cycloComp) - 16.2*math.Log(float64(loc))
+	origVal := 171.0 - 5.2*math.Log(halstComp) - 0.23*float64(cycloComp) - 16.2*math.Log(float64(loc))
 	normVal := int(math.Max(0.0, origVal*100.0/171.0))
 	return normVal
 }

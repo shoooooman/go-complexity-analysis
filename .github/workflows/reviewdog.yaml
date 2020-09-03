@@ -13,7 +13,7 @@ jobs:
       - name: checkout
         uses: actions/checkout@v2
       - name: install complexity
-        run: go get github.com/shoooooman/go-static-analysis/cmd/complexity
+        run: go get github.com/shoooooman/go-complexity-analysis/cmd/complexity
       - name: reviewdog set up
         uses: reviewdog/action-setup@v1
         with:

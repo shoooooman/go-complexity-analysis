@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"math"
+
 	// "reflect"
 	"go/ast"
 	"go/token"
@@ -51,30 +52,10 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				fmt.Println("cyclo", cycloComp, pass.Pkg.Name(), n.Name)
 			}
 
-			// FIXME: mock
-			operators, operands := calcHalstComp(n)
-			fmt.Println(operators, operands)
-			dist_opt := len(operators) // distinct operators
-			dist_opd := len(operands)  // distrinct operands
-			var sum_opt, sum_opd int
-			for _, val := range operators {
-				sum_opt += val
-			}
-
-			for _, val := range operands {
-				sum_opd += val
-			}
-
-			n_vocab := dist_opt + dist_opd
-			length := sum_opt + sum_opd
-			fmt.Println("n1", dist_opt, "n2", dist_opd)
-			fmt.Println("N1", sum_opt, "N2", sum_opd)
-			volume := float64(length) * math.Log2(float64(n_vocab))
-			difficulty := float64(dist_opt*sum_opd) / float64(2*dist_opd)
-			fmt.Println("difficulty", difficulty)
+			volume := calcHalstComp(n)
 
 			loc := countLOC(pass.Fset, n)
-			maintIdx := calcMaintIndex(int(volume), cycloComp, loc)
+			maintIdx := calcMaintIndex(volume, cycloComp, loc)
 			if maintIdx < maintunder {
 				fmt.Println("maint", maintIdx, pass.Pkg.Name(), n.Name)
 			}
@@ -115,7 +96,7 @@ func calcCycloComp(fd *ast.FuncDecl) int {
 	return comp
 }
 
-func calcHalstComp(fd *ast.FuncDecl) (map[string]int, map[string]int) {
+func calcHalstComp(fd *ast.FuncDecl) float64 {
 	operators, operands := map[string]int{}, map[string]int{}
 
 	var v ast.Visitor
@@ -125,7 +106,25 @@ func calcHalstComp(fd *ast.FuncDecl) (map[string]int, map[string]int) {
 	})
 	ast.Walk(v, fd)
 
-	return operators, operands
+	fmt.Println(operators, operands)
+	distOpt := len(operators) // distinct operators
+	distOpd := len(operands)  // distrinct operands
+	var sumOpt, sumOpd int
+	for _, val := range operators {
+		sumOpt += val
+	}
+
+	for _, val := range operands {
+		sumOpd += val
+	}
+
+	nVocab := distOpt + distOpd
+	length := sum_opt + sum_opd
+	volume := float64(length) * math.Log2(float64(n_vocab))
+	difficulty := float64(distOpt*sum_opd) / float64(2*distOpd)
+	fmt.Println("difficulty", difficulty)
+
+	return volume
 }
 
 // counts lines of a function
@@ -138,7 +137,7 @@ func countLOC(fs *token.FileSet, n *ast.FuncDecl) int {
 
 // calcMaintComp calculates the maintainability index
 // source: https://docs.microsoft.com/en-us/archive/blogs/codeanalysis/maintainability-index-range-and-meaning
-func calcMaintIndex(halstComp, cycloComp, loc int) int {
+func calcMaintIndex(halstComp float64, cycloComp, loc int) int {
 	origVal := 171.0 - 5.2*math.Log(float64(halstComp)) - 0.23*float64(cycloComp) - 16.2*math.Log(float64(loc))
 	normVal := int(math.Max(0.0, origVal*100.0/171.0))
 	return normVal

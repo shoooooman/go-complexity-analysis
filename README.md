@@ -28,6 +28,14 @@ $ go vet -vettool=$(which complexity) --maintunder 20 main.go
 $ go vet -vettool=$(which complexity) --cycloover 5 --maintunder 30 ./src
 ```
 # Metrics
+## Cyclomatic Complexity
+The Cyclomatic complexity indicates the complexity of a program.
+This program calculates the complexities of each function by counting idependent paths with the following rules.
+```
+Initial value: 1
++1: if, for, case, ||, &&
+```
+
 ## Halstead Metrics
 
 ### Operands

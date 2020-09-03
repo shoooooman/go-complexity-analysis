@@ -104,7 +104,6 @@ func calcHalstComp(fd *ast.FuncDecl) float64 {
 	})
 	ast.Walk(v, fd)
 
-	fmt.Println(operators, operands)
 	distOpt := len(operators) // distinct operators
 	distOpd := len(operands)  // distrinct operands
 	var sumOpt, sumOpd int

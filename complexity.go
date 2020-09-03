@@ -109,6 +109,9 @@ func walkStmt(n ast.Node, opt map[string]int, opd map[string]int) {
 		for _, exp := range n.Lhs {
 			walkExpr(exp, opt, opd)
 		}
+		for _, exp := range n.Rhs {
+			walkExpr(exp, opt, opd)
+		}
 	case *ast.ExprStmt:
 		walkExpr(n.X, opt, opd)
 	case *ast.IfStmt:
@@ -180,13 +183,30 @@ func walkExpr(exp ast.Expr, opt map[string]int, opd map[string]int) {
 		} else {
 			opd[exp.Name]++
 		}
+	case *ast.BasicLit:
+		if exp.Kind.IsLiteral() {
+			opd[exp.Value]++
+		} else {
+			opt[exp.Value]++
+		}
+	case *ast.BinaryExpr:
+		walkExpr(exp.X, opt, opd)
+		opt[exp.Op.String()]++
+		walkExpr(exp.Y, opt, opd)
+	case *ast.ParenExpr:
+		appendValidParen(exp.Lparen.IsValid(), exp.Rparen.IsValid(), opt)
+		walkExpr(exp.X, opt, opd)
 	case *ast.CallExpr:
 		walkExpr(exp.Fun, opt, opd)
-		if exp.Lparen.IsValid() && exp.Rparen.IsValid() {
-			opt["()"]++
-		}
+		appendValidParen(exp.Lparen.IsValid(), exp.Rparen.IsValid(), opt)
 		for _, ea := range exp.Args {
 			walkExpr(ea, opt, opd)
 		}
+	}
+}
+
+func appendValidParen(lvalid bool, rvalid bool, opt map[string]int) {
+	if lvalid && rvalid {
+		opt["()"]++
 	}
 }

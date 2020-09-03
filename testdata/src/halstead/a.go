@@ -19,3 +19,24 @@ func f3() {
 
 	}
 }
+
+func f4() {
+	for true {
+		if false {
+
+		} else if false {
+
+		} else if false {
+
+		} else if false {
+			n := 0
+			switch n {
+			case 0:
+			case 1:
+			default:
+			}
+		} else {
+
+		}
+	}
+}

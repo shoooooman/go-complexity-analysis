@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"go/ast"
 	"math"
-	"reflect"
+	// "reflect"
 
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
@@ -82,7 +82,7 @@ func walkFuncDecl(fd *ast.FuncDecl) (map[string]int, map[string]int) {
 
 	var v ast.Visitor
 	v = branchVisitor(func(n ast.Node) (w ast.Visitor) {
-		walkOps(n, operators, operands)
+		walkStmt(n, operators, operands)
 		return v
 	})
 	ast.Walk(v, fd)
@@ -90,7 +90,7 @@ func walkFuncDecl(fd *ast.FuncDecl) (map[string]int, map[string]int) {
 	return operators, operands
 }
 
-func walkOps(n ast.Node, opt map[string]int, opd map[string]int) {
+func walkStmt(n ast.Node, opt map[string]int, opd map[string]int) {
 	// if n != nil {
 	// 	fmt.Println(reflect.ValueOf(n).Elem(), reflect.ValueOf(n).Elem().Type())
 	// }
@@ -111,13 +111,64 @@ func walkOps(n ast.Node, opt map[string]int, opd map[string]int) {
 		}
 	case *ast.ExprStmt:
 		walkExpr(n.X, opt, opd)
-	case *ast.BasicLit:
-		if n.Kind.IsLiteral() {
-			opd[n.Value]++
-		} else {
-			opt[n.Value]++
+	case *ast.IfStmt:
+		if n.If.IsValid() {
+			opt["if"]++
+			opt["{}"]++
 		}
+		if n.Init != nil {
+			walkStmt(n.Init, opt, opd)
+		}
+		walkExpr(n.Cond, opt, opd)
+		walkStmt(n.Body, opt, opd)
+		if n.Else != nil {
+			opt["else"]++
+			opt["{}"]++
+			walkStmt(n.Else, opt, opd)
+		}
+	case *ast.ForStmt:
+		if n.For.IsValid() {
+			opt["for"]++
+			opt["{}"]++
+		}
+		if n.Init != nil {
+			walkStmt(n.Init, opt, opd)
+		}
+		if n.Cond != nil {
+			walkExpr(n.Cond, opt, opd)
+		}
+		if n.Post != nil {
+			walkStmt(n.Post, opt, opd)
+		}
+		walkStmt(n.Body, opt, opd)
+	case *ast.SwitchStmt:
+		if n.Switch.IsValid() {
+			opt["switch"]++
+		}
+		if n.Init != nil {
+			walkStmt(n.Init, opt, opd)
+		}
+		if n.Tag != nil {
+			walkExpr(n.Tag, opt, opd)
+		}
+		walkStmt(n.Body, opt, opd)
+	case *ast.CaseClause:
+		if n.List == nil {
+			opt["default"]++
+		} else {
+			for _, c := range n.List {
+				walkExpr(c, opt, opd)
+			}
+		}
+		if n.Colon.IsValid() {
+			opt[":"]++
+		}
+		if n.Body != nil {
+			for _, b := range n.Body {
+				walkStmt(b, opt, opd)
+			}
 
+		}
 	}
 }
 
@@ -134,10 +185,8 @@ func walkExpr(exp ast.Expr, opt map[string]int, opd map[string]int) {
 		if exp.Lparen.IsValid() && exp.Rparen.IsValid() {
 			opt["()"]++
 		}
-		fmt.Println(exp.Args)
+		for _, ea := range exp.Args {
+			walkExpr(ea, opt, opd)
+		}
 	}
-	// switch n := n.(type) {
-	//   case
-	//
-	// }
 }

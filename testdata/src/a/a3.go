@@ -1,5 +1,5 @@
 package a
 
-var snake_case int
+import "fmt"
 
-type S struct{}
+var s, _ = fmt.Printf("%s", 1)

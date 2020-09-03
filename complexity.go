@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math"
 
-	// "reflect"
 	"go/ast"
 	"go/token"
 
@@ -46,7 +45,6 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	inspect.Preorder(nodeFilter, func(n ast.Node) {
 		switch n := n.(type) {
 		case *ast.FuncDecl:
-			// pass.Reportf(n.Pos(), "Halstead complexity: %f:3, %f", volume, difficulty)
 			cycloComp := calcCycloComp(n)
 			if cycloComp > cycloover {
 				fmt.Println("cyclo", cycloComp, pass.Pkg.Name(), n.Name)
@@ -144,9 +142,6 @@ func calcMaintIndex(halstComp float64, cycloComp, loc int) int {
 }
 
 func walkStmt(n ast.Node, opt map[string]int, opd map[string]int) {
-	// if n != nil {
-	// 	fmt.Println(reflect.ValueOf(n).Elem(), reflect.ValueOf(n).Elem().Type())
-	// }
 	switch n := n.(type) {
 	case *ast.FuncDecl:
 		if n.Recv == nil {

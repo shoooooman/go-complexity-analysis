@@ -1,6 +1,3 @@
-# Complexity Analyzer
-Measure complexity of golang codes.
-
 # go-complexity-analysis
 go-complexity-analysis calculates the Cyclomatic complexities, the Halstead complexities and the Maintainability indices of golang functions.
 

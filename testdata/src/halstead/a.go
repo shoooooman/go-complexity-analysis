@@ -1,10 +1,10 @@
 package a
 
-func f1() { // Want "Halstead complexity: 4.754888, 1.000000"
+func f1() { // want "Cyclomatic complexity: 1"
 	print("Hello, World")
 }
 
-func f2() {
+func f2() { // want "Cyclomatic complexity: 1"
 	a := 2
 	b := 1
 	c := 3
@@ -12,7 +12,7 @@ func f2() {
 	println(avg)
 }
 
-func f3() {
+func f3() { // want "Cyclomatic complexity: 2"
 	if false {
 
 	} else {
@@ -20,7 +20,7 @@ func f3() {
 	}
 }
 
-func f4() {
+func f4() { // want "Cyclomatic complexity: 9"
 	for true {
 		if false {
 

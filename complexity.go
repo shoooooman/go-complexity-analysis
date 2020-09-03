@@ -3,9 +3,10 @@ package complexity
 import (
 	"flag"
 	"fmt"
-	"go/ast"
 	"math"
 	// "reflect"
+	"go/ast"
+	"go/token"
 
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
@@ -25,11 +26,13 @@ var Analyzer = &analysis.Analyzer{
 }
 
 var (
-	over int
+	cycloover  int
+	maintunder int
 )
 
 func init() {
-	flag.IntVar(&over, "over", 10, "show functions with Cyclomatic complexity > k")
+	flag.IntVar(&cycloover, "cycloover", 10, "show functions with the Cyclomatic complexity > N")
+	flag.IntVar(&maintunder, "maintunder", 20, "show functions with the Maintainability index < N")
 }
 
 func run(pass *analysis.Pass) (interface{}, error) {
@@ -42,7 +45,14 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	inspect.Preorder(nodeFilter, func(n ast.Node) {
 		switch n := n.(type) {
 		case *ast.FuncDecl:
-			operators, operands := walkFuncDecl(n)
+			// pass.Reportf(n.Pos(), "Halstead complexity: %f:3, %f", volume, difficulty)
+			cycloComp := calcCycloComp(n)
+			if cycloComp > cycloover {
+				fmt.Println("cyclo", cycloComp, pass.Pkg.Name(), n.Name)
+			}
+
+			// FIXME: mock
+			operators, operands := calcHalstComp(n)
 			fmt.Println(operators, operands)
 			dist_opt := len(operators) // distinct operators
 			dist_opd := len(operands)  // distrinct operands
@@ -61,8 +71,15 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			fmt.Println("N1", sum_opt, "N2", sum_opd)
 			volume := float64(length) * math.Log2(float64(n_vocab))
 			difficulty := float64(dist_opt*sum_opd) / float64(2*dist_opd)
+			fmt.Println("difficulty", difficulty)
 
-			pass.Reportf(n.Pos(), "Halstead complexity: %f:3, %f", volume, difficulty)
+			loc := countLOC(pass.Fset, n)
+			maintIdx := calcMaintIndex(int(volume), cycloComp, loc)
+			if maintIdx < maintunder {
+				fmt.Println("maint", maintIdx, pass.Pkg.Name(), n.Name)
+			}
+
+			pass.Reportf(n.Pos(), "Cyclomatic complexity: %d", cycloComp)
 		}
 	})
 
@@ -76,8 +93,29 @@ func (v branchVisitor) Visit(n ast.Node) (w ast.Visitor) {
 	return v(n)
 }
 
-// walkFuncDecl counts Cyclomatic complexity
-func walkFuncDecl(fd *ast.FuncDecl) (map[string]int, map[string]int) {
+// calcCycloComp calculates the Cyclomatic complexity
+func calcCycloComp(fd *ast.FuncDecl) int {
+	// ast.Print(nil, fd)
+
+	comp := 1
+	var v ast.Visitor
+	v = branchVisitor(func(n ast.Node) (w ast.Visitor) {
+		switch n := n.(type) {
+		case *ast.IfStmt, *ast.ForStmt, *ast.RangeStmt, *ast.CaseClause, *ast.CommClause:
+			comp++
+		case *ast.BinaryExpr:
+			if n.Op == token.LAND || n.Op == token.LOR {
+				comp++
+			}
+		}
+		return v
+	})
+	ast.Walk(v, fd)
+
+	return comp
+}
+
+func calcHalstComp(fd *ast.FuncDecl) (map[string]int, map[string]int) {
 	operators, operands := map[string]int{}, map[string]int{}
 
 	var v ast.Visitor
@@ -88,6 +126,22 @@ func walkFuncDecl(fd *ast.FuncDecl) (map[string]int, map[string]int) {
 	ast.Walk(v, fd)
 
 	return operators, operands
+}
+
+// counts lines of a function
+func countLOC(fs *token.FileSet, n *ast.FuncDecl) int {
+	f := fs.File(n.Pos())
+	startLine := f.Line(n.Pos())
+	endLine := f.Line(n.End())
+	return endLine - startLine + 1
+}
+
+// calcMaintComp calculates the maintainability index
+// source: https://docs.microsoft.com/en-us/archive/blogs/codeanalysis/maintainability-index-range-and-meaning
+func calcMaintIndex(halstComp, cycloComp, loc int) int {
+	origVal := 171.0 - 5.2*math.Log(float64(halstComp)) - 0.23*float64(cycloComp) - 16.2*math.Log(float64(loc))
+	normVal := int(math.Max(0.0, origVal*100.0/171.0))
+	return normVal
 }
 
 func walkStmt(n ast.Node, opt map[string]int, opd map[string]int) {

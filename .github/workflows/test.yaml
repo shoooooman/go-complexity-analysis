@@ -1,0 +1,31 @@
+name: golang_test
+on: [push]
+
+jobs:
+  golangci:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: golang set up
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.15
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v1
+        with:
+          version: v1.29
+          args: --skip-dirs=plugin
+  build:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: golang set up
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.15
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: test
+        run: go test -v ./...

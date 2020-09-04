@@ -1,0 +1,5 @@
+runner:
+  govet:
+    cmd: go get github.com/shoooooman/go-complexity-analysis/cmd/complexity | go vet -vettool=$(which complexity) .
+    errorformat:
+      - "%f:%l:%c: %m"

@@ -312,9 +312,6 @@ func walkSpec(spec ast.Spec, opt map[string]int, opd map[string]int) {
 }
 
 func walkExpr(exp ast.Expr, opt map[string]int, opd map[string]int) {
-	// if exp != nil {
-	// 	fmt.Println(reflect.ValueOf(exp).Elem(), reflect.ValueOf(exp).Elem().Type())
-	// }
 	switch exp := exp.(type) {
 	case *ast.ParenExpr:
 		appendValidSymb(exp.Lparen.IsValid(), exp.Rparen.IsValid(), opt, "()")

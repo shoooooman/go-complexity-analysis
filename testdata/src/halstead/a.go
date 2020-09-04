@@ -1,10 +1,10 @@
-package a
+package halstead
 
-func f1() { // want "Cyclomatic complexity: 1"
+func f1() { // want "Cyclomatic complexity: 1, Halstead difficulty: 2.500, volume: 18.095"
 	print("Hello, World")
 }
 
-func f2() { // want "Cyclomatic complexity: 1"
+func f2() { // want "Cyclomatic complexity: 1, Halstead difficulty: 6.857, volume: 101.579"
 	a := 2
 	b := 1
 	c := 3
@@ -12,7 +12,7 @@ func f2() { // want "Cyclomatic complexity: 1"
 	println(avg)
 }
 
-func f3() { // want "Cyclomatic complexity: 2"
+func f3() { // want "Cyclomatic complexity: 2, Halstead difficulty: NaN, volume: 25.266"
 	if false {
 
 	} else {
@@ -20,7 +20,7 @@ func f3() { // want "Cyclomatic complexity: 2"
 	}
 }
 
-func f4() { // want "Cyclomatic complexity: 9"
+func f4() { // want "Cyclomatic complexity: 9, Halstead difficulty: 10.833, volume: 144.000"
 	for true {
 		if false {
 

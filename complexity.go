@@ -48,7 +48,11 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			cycloComp := calcCycloComp(n)
 			if cycloComp > cycloover {
 				// fmt.Println("cyclo", cycloComp, pass.Pkg.Name(), n.Name)
-				pass.Reportf(n.Pos(), "Cyclomatic complexity: %d", cycloComp)
+				npos := n.Pos()
+				p := pass.Fset.File(npos).Position(npos)
+				msg := fmt.Sprintf("Cyclomatic complexity=%d\n", cycloComp)
+				fmt.Printf("%s:%d:%d: %s", p.Filename, p.Line, p.Column, msg)
+				// pass.Reportf(n.Pos(), "Cyclomatic complexity: %d", cycloComp)
 			}
 
 			volume := calcHalstComp(n)
@@ -57,7 +61,11 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			maintIdx := calcMaintIndex(volume, cycloComp, loc)
 			if maintIdx < maintunder {
 				// fmt.Println("maint", maintIdx, pass.Pkg.Name(), n.Name)
-				pass.Reportf(n.Pos(), "Maintainability index: %d", maintIdx)
+				npos := n.Pos()
+				p := pass.Fset.File(npos).Position(npos)
+				msg := fmt.Sprintf("Maintainability index=%d\n", cycloComp)
+				fmt.Printf("%s:%d:%d: %s", p.Filename, p.Line, p.Column, msg)
+				// pass.Reportf(n.Pos(), "Maintainability index: %d", maintIdx)
 			}
 
 			// pass.Reportf(n.Pos(), "Cyclomatic complexity: %d", cycloComp)

@@ -3,4 +3,3 @@ runner:
     cmd: go vet -vettool=$(which complexity) ./testdata/src/a/a.go
     errorformat:
       - "%f:%l:%c: %m"
-    level: info

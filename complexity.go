@@ -50,9 +50,8 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				// fmt.Println("cyclo", cycloComp, pass.Pkg.Name(), n.Name)
 				npos := n.Pos()
 				p := pass.Fset.File(npos).Position(npos)
-				msg := fmt.Sprintf("Cyclomatic complexity=%d\n", cycloComp)
+				msg := fmt.Sprintf("func %s seems to be complex (cyclomatic complexity=%d)\n", n.Name, cycloComp)
 				fmt.Printf("%s:%d:%d: %s", p.Filename, p.Line, p.Column, msg)
-				// pass.Reportf(n.Pos(), "Cyclomatic complexity: %d", cycloComp)
 			}
 
 			volume := calcHalstComp(n)
@@ -63,12 +62,11 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				// fmt.Println("maint", maintIdx, pass.Pkg.Name(), n.Name)
 				npos := n.Pos()
 				p := pass.Fset.File(npos).Position(npos)
-				msg := fmt.Sprintf("Maintainability index=%d\n", cycloComp)
+				msg := fmt.Sprintf("func %s seems to have low maintainability (maintainability index=%d)\n", n.Name, cycloComp)
 				fmt.Printf("%s:%d:%d: %s", p.Filename, p.Line, p.Column, msg)
-				// pass.Reportf(n.Pos(), "Maintainability index: %d", maintIdx)
 			}
 
-			// pass.Reportf(n.Pos(), "Cyclomatic complexity: %d", cycloComp)
+			pass.Reportf(n.Pos(), "Cyclomatic complexity: %d", cycloComp)
 		}
 	})
 

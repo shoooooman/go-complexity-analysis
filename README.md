@@ -30,18 +30,20 @@ $ go vet -vettool=$(which complexity) --cycloover 5 --maintunder 30 ./src
 # Metrics
 ## Halstead Metrics
 
-### Operands
+Reference: https://www.verifysoft.com/en_halstead_metrics.html
+
+### Operands (WIP)
 - Identifiers
 - Constant
 - Typename
 
-### Operators
+### Operators (WIP)
 - Operators
 - Keywords
 
 
 # WIP
-- [ ] Implement the Halstead complexities
+- [x] Implement the Halstead complexities
 - [ ] Connect with Github actions
     - [ ] gets diffs of pull requests
     - [ ] searches functions having the diffs

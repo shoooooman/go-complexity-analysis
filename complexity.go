@@ -97,12 +97,7 @@ func calcCycloComp(fd *ast.FuncDecl) int {
 func calcHalstComp(fd *ast.FuncDecl) float64 {
 	operators, operands := map[string]int{}, map[string]int{}
 
-	var v ast.Visitor
-	v = branchVisitor(func(n ast.Node) (w ast.Visitor) {
-		walkStmt(n, operators, operands)
-		return v
-	})
-	ast.Walk(v, fd)
+	walkDecl(fd, operators, operands)
 
 	distOpt := len(operators) // distinct operators
 	distOpd := len(operands)  // distrinct operands
@@ -140,14 +135,47 @@ func calcMaintIndex(halstComp float64, cycloComp, loc int) int {
 	return normVal
 }
 
-func walkStmt(n ast.Node, opt map[string]int, opd map[string]int) {
+func walkDecl(n ast.Node, opt map[string]int, opd map[string]int) {
 	switch n := n.(type) {
+	case *ast.GenDecl:
+		appendValidSymb(n.Lparen.IsValid(), n.Rparen.IsValid(), opt, "()")
+
+		if n.Tok.IsOperator() {
+			opt[n.Tok.String()]++
+		} else {
+			opd[n.Tok.String()]++
+		}
+		for _, s := range n.Specs {
+			walkSpec(s, opt, opd)
+		}
 	case *ast.FuncDecl:
 		if n.Recv == nil {
 			opt["func"]++
 			opt[n.Name.Name]++
 			opt["()"]++
-			opt["{}"]++
+		}
+		walkStmt(n.Body, opt, opd)
+	}
+}
+
+func walkStmt(n ast.Node, opt map[string]int, opd map[string]int) {
+	switch n := n.(type) {
+	case *ast.DeclStmt:
+		walkDecl(n.Decl, opt, opd)
+	// TODO(sff1019): Add EmptyStmt
+	// TODO(sff1019): Add LabeledStmt
+	case *ast.ExprStmt:
+		walkExpr(n.X, opt, opd)
+	case *ast.SendStmt:
+		walkExpr(n.Chan, opt, opd)
+		if n.Arrow.IsValid() {
+			opt["<-"]++
+		}
+		walkExpr(n.Value, opt, opd)
+	case *ast.IncDecStmt:
+		walkExpr(n.X, opt, opd)
+		if n.Tok.IsOperator() {
+			opt[n.Tok.String()]++
 		}
 	case *ast.AssignStmt:
 		if n.Tok.IsOperator() {
@@ -159,12 +187,40 @@ func walkStmt(n ast.Node, opt map[string]int, opd map[string]int) {
 		for _, exp := range n.Rhs {
 			walkExpr(exp, opt, opd)
 		}
-	case *ast.ExprStmt:
-		walkExpr(n.X, opt, opd)
+	case *ast.GoStmt:
+		if n.Go.IsValid() {
+			opt["go"]++
+		}
+		walkExpr(n.Call, opt, opd)
+	case *ast.DeferStmt:
+		if n.Defer.IsValid() {
+			opt["defer"]++
+		}
+		walkExpr(n.Call, opt, opd)
+	case *ast.ReturnStmt:
+		if n.Return.IsValid() {
+			opt["return"]++
+		}
+		for _, e := range n.Results {
+			walkExpr(e, opt, opd)
+		}
+	case *ast.BranchStmt:
+		if n.Tok.IsOperator() {
+			opt[n.Tok.String()]++
+		} else {
+			opd[n.Tok.String()]++
+		}
+		if n.Label != nil {
+			walkExpr(n.Label, opt, opd)
+		}
+	case *ast.BlockStmt:
+		appendValidSymb(n.Lbrace.IsValid(), n.Rbrace.IsValid(), opt, "{}")
+		for _, s := range n.List {
+			walkStmt(s, opt, opd)
+		}
 	case *ast.IfStmt:
 		if n.If.IsValid() {
 			opt["if"]++
-			opt["{}"]++
 		}
 		if n.Init != nil {
 			walkStmt(n.Init, opt, opd)
@@ -173,13 +229,27 @@ func walkStmt(n ast.Node, opt map[string]int, opd map[string]int) {
 		walkStmt(n.Body, opt, opd)
 		if n.Else != nil {
 			opt["else"]++
-			opt["{}"]++
 			walkStmt(n.Else, opt, opd)
 		}
+	case *ast.SwitchStmt:
+		if n.Switch.IsValid() {
+			opt["switch"]++
+		}
+		if n.Init != nil {
+			walkStmt(n.Init, opt, opd)
+		}
+		if n.Tag != nil {
+			walkExpr(n.Tag, opt, opd)
+		}
+		walkStmt(n.Body, opt, opd)
+	case *ast.SelectStmt:
+		if n.Select.IsValid() {
+			opt["select"]++
+		}
+		walkStmt(n.Body, opt, opd)
 	case *ast.ForStmt:
 		if n.For.IsValid() {
 			opt["for"]++
-			opt["{}"]++
 		}
 		if n.Init != nil {
 			walkStmt(n.Init, opt, opd)
@@ -191,16 +261,23 @@ func walkStmt(n ast.Node, opt map[string]int, opd map[string]int) {
 			walkStmt(n.Post, opt, opd)
 		}
 		walkStmt(n.Body, opt, opd)
-	case *ast.SwitchStmt:
-		if n.Switch.IsValid() {
-			opt["switch"]++
+	case *ast.RangeStmt:
+		if n.For.IsValid() {
+			opt["for"]++
 		}
-		if n.Init != nil {
-			walkStmt(n.Init, opt, opd)
+		if n.Key != nil {
+			walkExpr(n.Key, opt, opd)
+			if n.Tok.IsOperator() {
+				opt[n.Tok.String()]++
+			} else {
+				opd[n.Tok.String()]++
+			}
 		}
-		if n.Tag != nil {
-			walkExpr(n.Tag, opt, opd)
+		if n.Value != nil {
+			walkExpr(n.Value, opt, opd)
 		}
+		opt["range"]++
+		walkExpr(n.X, opt, opd)
 		walkStmt(n.Body, opt, opd)
 	case *ast.CaseClause:
 		if n.List == nil {
@@ -217,43 +294,122 @@ func walkStmt(n ast.Node, opt map[string]int, opd map[string]int) {
 			for _, b := range n.Body {
 				walkStmt(b, opt, opd)
 			}
+		}
+	}
+}
 
+func walkSpec(spec ast.Spec, opt map[string]int, opd map[string]int) {
+	switch spec := spec.(type) {
+	case *ast.ValueSpec:
+		for _, n := range spec.Names {
+			walkExpr(n, opt, opd)
+			if spec.Type != nil {
+				walkExpr(spec.Type, opt, opd)
+			}
+			if spec.Values != nil {
+				for _, v := range spec.Values {
+					walkExpr(v, opt, opd)
+				}
+			}
 		}
 	}
 }
 
 func walkExpr(exp ast.Expr, opt map[string]int, opd map[string]int) {
 	switch exp := exp.(type) {
-	case *ast.Ident:
-		if exp.Obj == nil {
-			opt[exp.Name]++
-		} else {
-			opd[exp.Name]++
+	case *ast.ParenExpr:
+		appendValidSymb(exp.Lparen.IsValid(), exp.Rparen.IsValid(), opt, "()")
+		walkExpr(exp.X, opt, opd)
+	case *ast.SelectorExpr:
+		walkExpr(exp.X, opt, opd)
+		walkExpr(exp.Sel, opt, opd)
+	case *ast.IndexExpr:
+		walkExpr(exp.X, opt, opd)
+		appendValidSymb(exp.Lbrack.IsValid(), exp.Rbrack.IsValid(), opt, "{}")
+		walkExpr(exp.Index, opt, opd)
+	case *ast.SliceExpr:
+		walkExpr(exp.X, opt, opd)
+		appendValidSymb(exp.Lbrack.IsValid(), exp.Rbrack.IsValid(), opt, "[]")
+		if exp.Low != nil {
+			walkExpr(exp.Low, opt, opd)
 		}
+		if exp.High != nil {
+			walkExpr(exp.High, opt, opd)
+		}
+		if exp.Max != nil {
+			walkExpr(exp.Max, opt, opd)
+		}
+	case *ast.TypeAssertExpr:
+		walkExpr(exp.X, opt, opd)
+		appendValidSymb(exp.Lparen.IsValid(), exp.Rparen.IsValid(), opt, "()")
+		if exp.Type != nil {
+			walkExpr(exp.Type, opt, opd)
+		}
+	case *ast.CallExpr:
+		walkExpr(exp.Fun, opt, opd)
+		appendValidSymb(exp.Lparen.IsValid(), exp.Rparen.IsValid(), opt, "()")
+		if exp.Ellipsis != 0 {
+			opt["..."]++
+		}
+		for _, a := range exp.Args {
+			walkExpr(a, opt, opd)
+		}
+	case *ast.StarExpr:
+		if exp.Star.IsValid() {
+			opt["*"]++
+		}
+		walkExpr(exp.X, opt, opd)
+	case *ast.UnaryExpr:
+		if exp.Op.IsOperator() {
+			opt[exp.Op.String()]++
+		} else {
+			opd[exp.Op.String()]++
+		}
+		walkExpr(exp.X, opt, opd)
+	case *ast.BinaryExpr:
+		walkExpr(exp.X, opt, opd)
+		opt[exp.Op.String()]++
+		walkExpr(exp.Y, opt, opd)
+	case *ast.KeyValueExpr:
+		walkExpr(exp.Key, opt, opd)
+		if exp.Colon.IsValid() {
+			opt[":"]++
+		}
+		walkExpr(exp.Value, opt, opd)
 	case *ast.BasicLit:
 		if exp.Kind.IsLiteral() {
 			opd[exp.Value]++
 		} else {
 			opt[exp.Value]++
 		}
-	case *ast.BinaryExpr:
-		walkExpr(exp.X, opt, opd)
-		opt[exp.Op.String()]++
-		walkExpr(exp.Y, opt, opd)
-	case *ast.ParenExpr:
-		appendValidParen(exp.Lparen.IsValid(), exp.Rparen.IsValid(), opt)
-		walkExpr(exp.X, opt, opd)
-	case *ast.CallExpr:
-		walkExpr(exp.Fun, opt, opd)
-		appendValidParen(exp.Lparen.IsValid(), exp.Rparen.IsValid(), opt)
-		for _, ea := range exp.Args {
-			walkExpr(ea, opt, opd)
+	case *ast.FuncLit:
+		walkStmt(exp.Body, opt, opd)
+	case *ast.CompositeLit:
+		appendValidSymb(exp.Lbrace.IsValid(), exp.Rbrace.IsValid(), opt, "{}")
+		if exp.Type != nil {
+			walkExpr(exp.Type, opt, opd)
+		}
+		for _, e := range exp.Elts {
+			walkExpr(e, opt, opd)
+		}
+	case *ast.Ident:
+		if exp.Obj == nil {
+			opt[exp.Name]++
+		} else {
+			opd[exp.Name]++
+		}
+	case *ast.Ellipsis:
+		if exp.Ellipsis.IsValid() {
+			opt["..."]++
+		}
+		if exp.Elt != nil {
+			walkExpr(exp.Elt, opt, opd)
 		}
 	}
 }
 
-func appendValidParen(lvalid bool, rvalid bool, opt map[string]int) {
+func appendValidSymb(lvalid bool, rvalid bool, opt map[string]int, symb string) {
 	if lvalid && rvalid {
-		opt["()"]++
+		opt[symb]++
 	}
 }

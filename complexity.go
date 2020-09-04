@@ -3,6 +3,7 @@ package complexity
 import (
 	"flag"
 	"fmt"
+	"log"
 	"math"
 
 	"go/ast"
@@ -51,7 +52,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				npos := n.Pos()
 				p := pass.Fset.File(npos).Position(npos)
 				msg := fmt.Sprintf("Cyclomatic complexity: %d\n", cycloComp)
-				fmt.Printf("%s:%d:%d: %s", p.Filename, p.Line, p.Column, msg)
+				log.Printf("%s:%d:%d: %s", p.Filename, p.Line, p.Column, msg)
 			}
 
 			volume := calcHalstComp(n)
@@ -63,7 +64,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				npos := n.Pos()
 				p := pass.Fset.File(npos).Position(npos)
 				msg := fmt.Sprintf("Maintainability index=: %d\n", cycloComp)
-				fmt.Printf("%s:%d:%d: %s", p.Filename, p.Line, p.Column, msg)
+				log.Printf("%s:%d:%d: %s", p.Filename, p.Line, p.Column, msg)
 			}
 
 			// pass.Reportf(n.Pos(), "Cyclomatic complexity: %d", cycloComp)

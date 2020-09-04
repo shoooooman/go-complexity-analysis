@@ -71,8 +71,9 @@ The thresholds are as follows:
 
 # WIP
 - [x] Implement the Halstead complexities
-- [ ] Connect with Github actions
-    - [ ] gets diffs of pull requests
-    - [ ] searches functions having the diffs
-    - [ ] calculates the difficulties of the pull requests
-    - [ ] showes the difficulties
+- [ ] Make an action for Github actions
+    - [x] makes a demo
+          - [x] gets diffs of pull requests
+          - [x] calculates the difficulties of functions in the diffs
+          - [x] shows the difficulties by using reviewdog
+    - [ ] wrap as an action

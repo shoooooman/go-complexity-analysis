@@ -38,16 +38,20 @@ Initial value: 1
 
 ## Halstead Metrics
 
-Reference: https://www.verifysoft.com/en_halstead_metrics.html
+Calculation of each Halstead metrics can be found [here](!https://www.verifysoft.com/en_halstead_metrics.html).
 
-### Operands (WIP)
-- Identifiers
-- Constant
-- Typename
+### Rules
+1. Comments are not considered in Halstead Metrics
+2. Operands and Operators are divided as follows:
+#### Operands 
+- [Identifiers](!https://golang.org/ref/spec#Identifiers)
+- [Constants](!https://golang.org/ref/spec#Constants)
+- [Variables](!https://golang.org/ref/spec#Variables)
 
-### Operators (WIP)
-- Operators
-- Keywords
+#### Operators
+- [Operators](!https://golang.org/ref/spec#Operators_and_punctuation)  
+    - Parenthesis, such as "()", is counted as one operator
+- [Keywords](!https://golang.org/ref/spec#Keywords)
 
 ## Maintainability Index
 The Maintainability index represents maintainability of a program.

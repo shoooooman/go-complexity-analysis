@@ -50,15 +50,15 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				fmt.Println("cyclo", cycloComp, pass.Pkg.Name(), n.Name)
 			}
 
-			volume := calcHalstComp(n)
+			halstMet := calcHalstComp(n)
 
 			loc := countLOC(pass.Fset, n)
-			maintIdx := calcMaintIndex(volume, cycloComp, loc)
+			maintIdx := calcMaintIndex(halstMet["volume"], cycloComp, loc)
 			if maintIdx < maintunder {
 				fmt.Println("maint", maintIdx, pass.Pkg.Name(), n.Name)
 			}
 
-			pass.Reportf(n.Pos(), "Cyclomatic complexity: %d", cycloComp)
+			pass.Reportf(n.Pos(), "Cyclomatic complexity: %d, Halstead difficulty: %0.3f, volume: %0.3f", cycloComp, halstMet["difficulty"], halstMet["volume"])
 		}
 	})
 
@@ -74,8 +74,6 @@ func (v branchVisitor) Visit(n ast.Node) (w ast.Visitor) {
 
 // calcCycloComp calculates the Cyclomatic complexity
 func calcCycloComp(fd *ast.FuncDecl) int {
-	// ast.Print(nil, fd)
-
 	comp := 1
 	var v ast.Visitor
 	v = branchVisitor(func(n ast.Node) (w ast.Visitor) {
@@ -94,8 +92,9 @@ func calcCycloComp(fd *ast.FuncDecl) int {
 	return comp
 }
 
-func calcHalstComp(fd *ast.FuncDecl) float64 {
+func calcHalstComp(fd *ast.FuncDecl) map[string]float64 {
 	operators, operands := map[string]int{}, map[string]int{}
+	halstMet := map[string]float64{}
 
 	walkDecl(fd, operators, operands)
 
@@ -112,11 +111,10 @@ func calcHalstComp(fd *ast.FuncDecl) float64 {
 
 	nVocab := distOpt + distOpd
 	length := sumOpt + sumOpd
-	volume := float64(length) * math.Log2(float64(nVocab))
-	difficulty := float64(distOpt*sumOpd) / float64(2*distOpd)
-	fmt.Println("difficulty", difficulty)
+	halstMet["volume"] = float64(length) * math.Log2(float64(nVocab))
+	halstMet["difficulty"] = float64(distOpt*sumOpd) / float64(2*distOpd)
 
-	return volume
+	return halstMet
 }
 
 // counts lines of a function
@@ -162,8 +160,6 @@ func walkStmt(n ast.Node, opt map[string]int, opd map[string]int) {
 	switch n := n.(type) {
 	case *ast.DeclStmt:
 		walkDecl(n.Decl, opt, opd)
-	// TODO(sff1019): Add EmptyStmt
-	// TODO(sff1019): Add LabeledStmt
 	case *ast.ExprStmt:
 		walkExpr(n.X, opt, opd)
 	case *ast.SendStmt:
@@ -316,6 +312,9 @@ func walkSpec(spec ast.Spec, opt map[string]int, opd map[string]int) {
 }
 
 func walkExpr(exp ast.Expr, opt map[string]int, opd map[string]int) {
+	// if exp != nil {
+	// 	fmt.Println(reflect.ValueOf(exp).Elem(), reflect.ValueOf(exp).Elem().Type())
+	// }
 	switch exp := exp.(type) {
 	case *ast.ParenExpr:
 		appendValidSymb(exp.Lparen.IsValid(), exp.Rparen.IsValid(), opt, "()")
@@ -383,6 +382,7 @@ func walkExpr(exp ast.Expr, opt map[string]int, opd map[string]int) {
 			opt[exp.Value]++
 		}
 	case *ast.FuncLit:
+		walkExpr(exp.Type, opt, opd)
 		walkStmt(exp.Body, opt, opd)
 	case *ast.CompositeLit:
 		appendValidSymb(exp.Lbrace.IsValid(), exp.Rbrace.IsValid(), opt, "{}")
@@ -405,6 +405,24 @@ func walkExpr(exp ast.Expr, opt map[string]int, opd map[string]int) {
 		if exp.Elt != nil {
 			walkExpr(exp.Elt, opt, opd)
 		}
+	case *ast.FuncType:
+		if exp.Func.IsValid() {
+			opt["func"]++
+		}
+		appendValidSymb(true, true, opt, "()")
+		if exp.Params.List != nil {
+			for _, f := range exp.Params.List {
+				walkExpr(f.Type, opt, opd)
+			}
+		}
+	case *ast.ChanType:
+		if exp.Begin.IsValid() {
+			opt["chan"]++
+		}
+		if exp.Arrow.IsValid() {
+			opt["<-"]++
+		}
+		walkExpr(exp.Value, opt, opd)
 	}
 }
 

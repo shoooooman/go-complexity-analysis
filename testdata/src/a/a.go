@@ -39,3 +39,19 @@ func f3() { // want "Cyclomatic complexity: 4"
 		}
 	}
 }
+
+func f4() { // want "Cyclomatic complexity: 11"
+	n := 0
+	switch n {
+	case 0:
+	case 1:
+	case 2:
+	case 3:
+	case 4:
+	case 5:
+	case 6:
+	case 7:
+	case 8:
+	case 9:
+	}
+}

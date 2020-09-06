@@ -30,8 +30,9 @@ $ go vet -vettool=$(which complexity) --cycloover 5 --maintunder 30 ./src
 ```
 
 ## Github Actions
-You can use the Github Actions to execute the complexity command on Github pull requests with reviewdog.
-See [shoooooman/go-complexity-analysis-action](https://github.com/shoooooman/go-complexity-analysis) for the details.
+You can use the Github Actions to execute the complexity command on Github pull requests with [reviewdog](https://github.com/reviewdog/reviewdog).
+
+See [shoooooman/go-complexity-analysis-action](https://github.com/shoooooman/go-complexity-analysis-action) for the details.
 
 
 # Metrics

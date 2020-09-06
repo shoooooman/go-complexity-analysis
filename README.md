@@ -18,8 +18,8 @@ $ go vet -vettool=$(which complexity) [flags] [directory/file]
 
 ## Output
 ```
-<filename>:<line>: func <funcname> seems to be complex (cyclomatic complexity=<cyclomatic complexity>)
-<filename>:<line>: func <funcname> seems to have low maintainability (maintainability index=<maintainability index>)
+<filename>:<line>:<column>: func <funcname> seems to be complex (cyclomatic complexity=<cyclomatic complexity>)
+<filename>:<line>:<column>: func <funcname> seems to have low maintainability (maintainability index=<maintainability index>)
 ```
 
 ## Examples

@@ -8,7 +8,7 @@ $ go get github.com/shoooooman/go-complexity-analysis/cmd/complexity
 
 # Usage
 ```sh
-$ go vet -vettool=$(which complexity) [flags] [packages]
+$ go vet -vettool=$(which complexity) [flags] [directory/file]
 ```
 
 ## Flags
@@ -18,15 +18,22 @@ $ go vet -vettool=$(which complexity) [flags] [packages]
 
 ## Output
 ```
-<complexity kind> <value> <pkgname> <funcname>
+<filename>:<line>: func <funcname> seems to be complex (cyclomatic complexity=<cyclomatic complexity>)
+<filename>:<line>: func <funcname> seems to have low maintainability (maintainability index=<maintainability index>)
 ```
 
 ## Examples
 ```go
-$ go vet -vettool=$(which complexity) --cycloover 10 .
+$ go vet -vettool=$(which complexity) --cycloover 10 ./...
 $ go vet -vettool=$(which complexity) --maintunder 20 main.go
 $ go vet -vettool=$(which complexity) --cycloover 5 --maintunder 30 ./src
 ```
+
+## Github Actions
+You can use the Github Actions to execute the complexity command on Github pull requests with reviewdog.
+See [shoooooman/go-complexity-analysis-action](https://github.com/shoooooman/go-complexity-analysis) for the details.
+
+
 # Metrics
 ## Cyclomatic Complexity
 The Cyclomatic complexity indicates the complexity of a program.
@@ -43,13 +50,14 @@ Calculation of each Halstead metrics can be found [here](!https://www.verifysoft
 ### Rules
 1. Comments are not considered in Halstead Metrics
 2. Operands and Operators are divided as follows:
-#### Operands 
+
+#### Operands
 - [Identifiers](!https://golang.org/ref/spec#Identifiers)
 - [Constants](!https://golang.org/ref/spec#Constants)
 - [Variables](!https://golang.org/ref/spec#Variables)
 
 #### Operators
-- [Operators](!https://golang.org/ref/spec#Operators_and_punctuation)  
+- [Operators](!https://golang.org/ref/spec#Operators_and_punctuation)
     - Parenthesis, such as "()", is counted as one operator
 - [Keywords](!https://golang.org/ref/spec#Keywords)
 
@@ -73,11 +81,3 @@ The thresholds are as follows:
 ```
 
 
-# WIP
-- [x] Implement the Halstead complexities
-- [ ] Make an action for Github actions
-    - [x] makes a demo
-          - [x] gets diffs of pull requests
-          - [x] calculates the difficulties of functions in the diffs
-          - [x] shows the difficulties by using reviewdog
-    - [ ] wrap as an action

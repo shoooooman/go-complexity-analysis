@@ -47,11 +47,10 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		case *ast.FuncDecl:
 			cycloComp := calcCycloComp(n)
 			if cycloComp > cycloover {
-				// fmt.Println("cyclo", cycloComp, pass.Pkg.Name(), n.Name)
 				npos := n.Pos()
 				p := pass.Fset.File(npos).Position(npos)
 				msg := fmt.Sprintf("func %s seems to be complex (cyclomatic complexity=%d)\n", n.Name, cycloComp)
-				fmt.Printf("%s:%d: %s", p.Filename, p.Line, msg)
+				fmt.Printf("%s:%d:%d: %s", p.Filename, p.Line, p.Column, msg)
 			}
 
 			halstMet := calcHalstComp(n)
@@ -59,14 +58,16 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			loc := countLOC(pass.Fset, n)
 			maintIdx := calcMaintIndex(halstMet["volume"], cycloComp, loc)
 			if maintIdx < maintunder {
-				// fmt.Println("maint", maintIdx, pass.Pkg.Name(), n.Name)
 				npos := n.Pos()
 				p := pass.Fset.File(npos).Position(npos)
 				msg := fmt.Sprintf("func %s seems to have low maintainability (maintainability index=%d)\n", n.Name, cycloComp)
-				fmt.Printf("%s:%d: %s", p.Filename, p.Line, msg)
+				fmt.Printf("%s:%d:%d: %s", p.Filename, p.Line, p.Column, msg)
 			}
 
-			pass.Reportf(n.Pos(), "Cyclomatic complexity: %d, Halstead difficulty: %0.3f, volume: %0.3f", cycloComp, halstMet["difficulty"], halstMet["volume"])
+			// Only when `go test`
+			if flag.Lookup("test.v") != nil {
+				pass.Reportf(n.Pos(), "Cyclomatic complexity: %d, Halstead difficulty: %0.3f, volume: %0.3f", cycloComp, halstMet["difficulty"], halstMet["volume"])
+			}
 		}
 	})
 

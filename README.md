@@ -38,6 +38,7 @@ See [shoooooman/go-complexity-analysis-action](https://github.com/shoooooman/go-
 # Metrics
 ## Cyclomatic Complexity
 The Cyclomatic complexity indicates the complexity of a program.
+
 This program calculates the complexities of each function by counting idependent paths with the following rules.
 ```
 Initial value: 1
@@ -64,6 +65,7 @@ Calculation of each Halstead metrics can be found [here](!https://www.verifysoft
 
 ## Maintainability Index
 The Maintainability index represents maintainability of a program.
+
 The value is calculated with the Cyclomatic complexity and the Halstead volume by using the following formula.
 ```
 Maintainability Index = 171 - 5.2 * ln(Halstead Volume) - 0.23 * (Cyclomatic Complexity) - 16.2 * ln(Lines of Code)

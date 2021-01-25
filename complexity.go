@@ -60,7 +60,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			if maintIdx < maintunder {
 				npos := n.Pos()
 				p := pass.Fset.File(npos).Position(npos)
-				msg := fmt.Sprintf("func %s seems to have low maintainability (maintainability index=%d)\n", n.Name, cycloComp)
+				msg := fmt.Sprintf("func %s seems to have low maintainability (maintainability index=%d)\n", n.Name, maintIdx)
 				fmt.Printf("%s:%d:%d: %s", p.Filename, p.Line, p.Column, msg)
 			}
 

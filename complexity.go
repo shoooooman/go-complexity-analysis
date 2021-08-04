@@ -137,9 +137,19 @@ func countLOC(fs *token.FileSet, n *ast.FuncDecl) int {
 // calcMaintComp calculates the maintainability index
 // source: https://docs.microsoft.com/en-us/archive/blogs/codeanalysis/maintainability-index-range-and-meaning
 func calcMaintIndex(halstComp float64, cycloComp, loc int) int {
-	origVal := 171.0 - 5.2*math.Log(halstComp) - 0.23*float64(cycloComp) - 16.2*math.Log(float64(loc))
+
+	origVal := 171.0 - 5.2*logOf(halstComp) - 0.23*float64(cycloComp) - 16.2*logOf(float64(loc))
 	normVal := int(math.Max(0.0, origVal*100.0/171.0))
 	return normVal
+}
+
+func logOf(val float64) float64 {
+	switch val {
+	case 0:
+		return 0
+	default:
+		return math.Log(val)
+	}
 }
 
 func walkDecl(n ast.Node, opt map[string]int, opd map[string]int) {

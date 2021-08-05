@@ -40,3 +40,9 @@ func f4() { // want "Cyclomatic complexity: 9, Halstead difficulty: 10.833, volu
 		}
 	}
 }
+
+type t1 struct {
+}
+
+func (t *t1) f5() { // want "Cyclomatic complexity: 1, Halstead difficulty: NaN, volume: 10.000"
+}

@@ -47,7 +47,7 @@ Initial value: 1
 
 ## Halstead Metrics
 
-Calculation of each Halstead metrics can be found [here](!https://www.verifysoft.com/en_halstead_metrics.html).
+Calculation of each Halstead metrics can be found [here](https://www.verifysoft.com/en_halstead_metrics.html).
 
 ### Rules
 1. Comments are not considered in Halstead Metrics

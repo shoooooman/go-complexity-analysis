@@ -160,6 +160,10 @@ func walkDecl(n ast.Node, opt map[string]int, opd map[string]int) {
 			opt["func"]++
 			opt[n.Name.Name]++
 			opt["()"]++
+		} else {
+			opt["func"]++
+			opt[n.Name.Name]++
+			opt["()"] += 2
 		}
 		walkStmt(n.Body, opt, opd)
 	}
